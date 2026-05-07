@@ -1,6 +1,11 @@
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
-from deepface import DeepFace
+
+try:
+    from deepface import DeepFace
+except:
+    DeepFace = None
+
 import tempfile
 import os
 
@@ -27,15 +32,24 @@ def map_emotion_to_mood(emotion):
 
     return emotion_map.get(emotion, "neutral")
 
+
 @app.get("/")
 def home():
     return {"message": "MoodFlix backend is running"}
+
 
 @app.post("/detect/photo")
 async def detect_photo(file: UploadFile = File(...)):
     temp_file_path = ""
 
     try:
+        if DeepFace is None:
+            return {
+                "detectedEmotion": "neutral",
+                "mood": "neutral",
+                "error": "DeepFace not available on server"
+            }
+
         file_bytes = await file.read()
 
         with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as temp_file:
